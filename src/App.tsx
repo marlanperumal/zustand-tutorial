@@ -1,18 +1,30 @@
 import { create } from "zustand";
 import { combine } from "zustand/middleware";
 
+type GameState = {
+  history: Array<Array<string | null>>;
+  currentMove: number;
+};
+
+type GameActions = {
+  setHistory: (
+    nextHistory:
+      | Array<Array<string | null>>
+      | ((squares: Array<Array<string | null>>) => Array<Array<string | null>>)
+  ) => void;
+  setCurrentMove: (
+    nextCurrentMove: number | ((currentMove: number) => number)
+  ) => void;
+};
+
 const useGameStore = create(
-  combine(
+  combine<GameState, GameActions>(
     {
       history: [Array(9).fill(null)],
       currentMove: 0,
     },
     (set) => ({
-      setHistory: (
-        nextHistory:
-          | Array<string | null>[]
-          | ((squares: Array<string | null>[]) => Array<string | null>[])
-      ) => {
+      setHistory: (nextHistory) => {
         set((state) => ({
           history:
             typeof nextHistory === "function"
@@ -20,9 +32,7 @@ const useGameStore = create(
               : nextHistory,
         }));
       },
-      setCurrentMove: (
-        nextCurrentMove: number | ((currentMove: number) => number)
-      ) => {
+      setCurrentMove: (nextCurrentMove) => {
         set((state) => ({
           currentMove:
             typeof nextCurrentMove === "function"
@@ -34,20 +44,19 @@ const useGameStore = create(
   )
 );
 
-function calculateWinner(squares: Array<string | null>) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
+const WINNING_LINES = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
+] as const;
 
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
+function calculateWinner(squares: Array<string | null>) {
+  for (const [a, b, c] of WINNING_LINES) {
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
       return squares[a];
     }
@@ -60,18 +69,17 @@ function calculateTurns(squares: Array<string | null>) {
 }
 
 function calculateStatus(winner: string | null, turns: number, player: string) {
-  if (!winner && !turns) return "Draw";
   if (winner) return `Winner: ${winner}`;
+  if (turns === 9) return "Draw";
   return `Next player: ${player}`;
 }
 
-function Square({
-  value,
-  onSquareClick,
-}: {
+type SquareProps = {
   value: string | null;
   onSquareClick: () => void;
-}) {
+};
+
+function Square({ value, onSquareClick }: SquareProps) {
   return (
     <button
       style={{
@@ -93,15 +101,13 @@ function Square({
   );
 }
 
-function Board({
-  xIsNext,
-  squares,
-  onPlay,
-}: {
+type BoardProps = {
   xIsNext: boolean;
   squares: Array<string | null>;
   onPlay: (nextSquares: Array<string | null>) => void;
-}) {
+};
+
+function Board({ xIsNext, squares, onPlay }: BoardProps) {
   const winner = calculateWinner(squares);
   const turns = calculateTurns(squares);
   const player = xIsNext ? "X" : "O";
@@ -127,11 +133,11 @@ function Board({
           border: "1px solid #999",
         }}
       >
-        {squares.map((square, squareIndex) => (
+        {squares.map((square, index) => (
           <Square
-            key={squareIndex}
+            key={index}
             value={square}
-            onSquareClick={() => handleClick(squareIndex)}
+            onSquareClick={() => handleClick(index)}
           />
         ))}
       </div>
@@ -166,19 +172,13 @@ function Game() {
       </div>
       <div style={{ marginLeft: "1rem" }}>
         <ol>
-          {history.map((_, historyIndex) => {
-            const description =
-              historyIndex > 0
-                ? `Go to move #${historyIndex}`
-                : "Go to game start";
-            return (
-              <li key={historyIndex}>
-                <button onClick={() => jumpTo(historyIndex)}>
-                  {description}
-                </button>
-              </li>
-            );
-          })}
+          {history.map((_, index) => (
+            <li key={index}>
+              <button onClick={() => jumpTo(index)}>
+                {index > 0 ? `Go to move #${index}` : "Go to game start"}
+              </button>
+            </li>
+          ))}
         </ol>
       </div>
     </div>
