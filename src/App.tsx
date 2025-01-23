@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 
 type GameState = {
   history: Array<Array<string | null>>;
@@ -16,26 +17,36 @@ type GameActions = {
   ) => void;
 };
 
-const useGameStore = create<GameState & GameActions>((set) => ({
-  history: [Array(9).fill(null)],
-  currentMove: 0,
-  setHistory: (nextHistory) => {
-    set((state) => ({
-      history:
-        typeof nextHistory === "function"
-          ? nextHistory(state.history)
-          : nextHistory,
-    }));
-  },
-  setCurrentMove: (nextCurrentMove) => {
-    set((state) => ({
-      currentMove:
-        typeof nextCurrentMove === "function"
-          ? nextCurrentMove(state.currentMove)
-          : nextCurrentMove,
-    }));
-  },
-}));
+const useGameStore = create<GameState & GameActions>()(
+  devtools((set) => ({
+    history: [Array(9).fill(null)],
+    currentMove: 0,
+    setHistory: (nextHistory) => {
+      set(
+        (state) => ({
+          history:
+            typeof nextHistory === "function"
+              ? nextHistory(state.history)
+              : nextHistory,
+        }),
+        undefined,
+        "setHistory"
+      );
+    },
+    setCurrentMove: (nextCurrentMove) => {
+      set(
+        (state) => ({
+          currentMove:
+            typeof nextCurrentMove === "function"
+              ? nextCurrentMove(state.currentMove)
+              : nextCurrentMove,
+        }),
+        undefined,
+        "setCurrentMove"
+      );
+    },
+  }))
+);
 
 const WINNING_LINES = [
   [0, 1, 2],
