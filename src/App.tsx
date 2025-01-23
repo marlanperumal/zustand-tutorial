@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { devtools } from "zustand/middleware";
+import { devtools, persist } from "zustand/middleware";
 
 type GameState = {
   history: Array<Array<string | null>>;
@@ -18,34 +18,39 @@ type GameActions = {
 };
 
 const useGameStore = create<GameState & GameActions>()(
-  devtools((set) => ({
-    history: [Array(9).fill(null)],
-    currentMove: 0,
-    setHistory: (nextHistory) => {
-      set(
-        (state) => ({
-          history:
-            typeof nextHistory === "function"
-              ? nextHistory(state.history)
-              : nextHistory,
-        }),
-        undefined,
-        "setHistory"
-      );
-    },
-    setCurrentMove: (nextCurrentMove) => {
-      set(
-        (state) => ({
-          currentMove:
-            typeof nextCurrentMove === "function"
-              ? nextCurrentMove(state.currentMove)
-              : nextCurrentMove,
-        }),
-        undefined,
-        "setCurrentMove"
-      );
-    },
-  }))
+  persist(
+    devtools((set) => ({
+      history: [Array(9).fill(null)],
+      currentMove: 0,
+      setHistory: (nextHistory) => {
+        set(
+          (state) => ({
+            history:
+              typeof nextHistory === "function"
+                ? nextHistory(state.history)
+                : nextHistory,
+          }),
+          undefined,
+          "setHistory"
+        );
+      },
+      setCurrentMove: (nextCurrentMove) => {
+        set(
+          (state) => ({
+            currentMove:
+              typeof nextCurrentMove === "function"
+                ? nextCurrentMove(state.currentMove)
+                : nextCurrentMove,
+          }),
+          undefined,
+          "setCurrentMove"
+        );
+      },
+    })),
+    {
+      name: "game-storage",
+    }
+  )
 );
 
 const WINNING_LINES = [
